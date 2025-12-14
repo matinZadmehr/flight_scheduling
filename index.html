@@ -96,7 +96,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 15px;
+            gap: 10px;
             margin-bottom: 30px;
         }
         
@@ -104,7 +104,6 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            flex: 1;
         }
         
         .time-input-group label {
@@ -120,7 +119,7 @@
             border-radius: 10px;
             font-size: 18px;
             text-align: center;
-            width: 100%;
+            width: 100px;
             background: white;
             font-weight: bold;
         }
@@ -132,41 +131,12 @@
             margin-top: 25px;
         }
         
-        .am-pm-selector {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            flex: 1;
-        }
-        
-        .am-pm-buttons {
-            display: flex;
-            gap: 10px;
-            width: 100%;
-            margin-top: 8px;
-        }
-        
-        .am-pm-btn {
-            flex: 1;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            background: white;
-            cursor: pointer;
-            transition: all 0.3s;
+        .hint {
+            font-size: 12px;
+            color: #888;
             text-align: center;
-            font-size: 16px;
-            font-weight: 500;
-        }
-        
-        .am-pm-btn:hover {
-            background: #f0f0f0;
-        }
-        
-        .am-pm-btn.selected {
-            background: #2196f3;
-            color: white;
-            border-color: #1976d2;
+            margin-top: -15px;
+            margin-bottom: 20px;
         }
         
         .buttons {
@@ -248,15 +218,11 @@
             
             .time-input-row {
                 flex-wrap: wrap;
-                gap: 10px;
+                gap: 15px;
             }
             
-            .time-input-group {
-                min-width: 80px;
-            }
-            
-            .am-pm-selector {
-                width: 100%;
+            .time-input {
+                width: 80px;
             }
             
             .buttons {
@@ -278,28 +244,21 @@
         </div>
         
         <div class="time-container">
-            <h2>Enter Time</h2>
+            <h2>Enter Time (24-hour format)</h2>
             <div class="time-input-row">
                 <div class="time-input-group">
-                    <label>Hour</label>
-                    <input type="number" id="customHour" class="time-input" min="1" max="12" value="12">
+                    <label>Hour (1-23)</label>
+                    <input type="number" id="customHour" class="time-input" min="1" max="23" value="12">
                 </div>
                 
                 <div class="separator">:</div>
                 
                 <div class="time-input-group">
-                    <label>Minute</label>
+                    <label>Minute (0-59)</label>
                     <input type="number" id="customMinute" class="time-input" min="0" max="59" value="0">
                 </div>
-                
-                <div class="am-pm-selector">
-                    <label>AM/PM</label>
-                    <div class="am-pm-buttons">
-                        <div class="am-pm-btn selected" data-value="AM">AM</div>
-                        <div class="am-pm-btn" data-value="PM">PM</div>
-                    </div>
-                </div>
             </div>
+            <p class="hint">Example: 14:30 = 2:30 PM, 09:00 = 9:00 AM</p>
         </div>
         
         <div class="selected-info" id="selectedInfo">
@@ -336,44 +295,45 @@
             }
         });
         
-        // AM/PM button handlers
-        document.querySelectorAll('.am-pm-btn').forEach(btn => {
-            btn.onclick = function() {
-                document.querySelectorAll('.am-pm-btn').forEach(b => {
-                    b.classList.remove('selected');
-                });
-                this.classList.add('selected');
-                updateSelectedDateTime();
-            };
+        // Add constraints to hour input (1-23)
+        document.getElementById('customHour').addEventListener('input', function() {
+            let hour = parseInt(this.value) || 12;
+            if (hour < 1) hour = 1;
+            if (hour > 23) hour = 23;
+            this.value = hour;
+            updateSelectedDateTime();
         });
         
-        // Update when inputs change
-        document.getElementById('customHour').addEventListener('input', updateSelectedDateTime);
-        document.getElementById('customMinute').addEventListener('input', updateSelectedDateTime);
+        // Add constraints to minute input (0-59)
+        document.getElementById('customMinute').addEventListener('input', function() {
+            let minute = parseInt(this.value) || 0;
+            if (minute < 0) minute = 0;
+            if (minute > 59) minute = 59;
+            this.value = minute;
+            updateSelectedDateTime();
+        });
+        
+        // Also update on change (for keyboard arrows)
+        document.getElementById('customHour').addEventListener('change', updateSelectedDateTime);
+        document.getElementById('customMinute').addEventListener('change', updateSelectedDateTime);
         
         function updateSelectedDateTime() {
             const selectedDate = fp.selectedDates[0];
             const customHour = document.getElementById('customHour').value;
             const customMinute = document.getElementById('customMinute').value;
-            const selectedAmPm = document.querySelector('.am-pm-btn.selected').dataset.value;
             
             if (selectedDate) {
-                // Validate and format hour
+                // Validate hour (1-23)
                 let hour = parseInt(customHour) || 12;
                 if (hour < 1) hour = 1;
-                if (hour > 12) hour = 12;
+                if (hour > 23) hour = 23;
                 document.getElementById('customHour').value = hour;
                 
-                // Validate and format minute
+                // Validate minute (0-59)
                 let minute = parseInt(customMinute) || 0;
                 if (minute < 0) minute = 0;
                 if (minute > 59) minute = 59;
                 document.getElementById('customMinute').value = minute;
-                
-                // Convert 12-hour to 24-hour format
-                let hour24 = hour;
-                if (selectedAmPm === 'PM' && hour24 < 12) hour24 += 12;
-                if (selectedAmPm === 'AM' && hour24 === 12) hour24 = 0;
                 
                 // Format date nicely
                 const dateStr = selectedDate.toLocaleDateString('en-US', {
@@ -383,23 +343,44 @@
                     day: 'numeric'
                 });
                 
-                // Format time nicely (12-hour with AM/PM)
-                const timeStr = `${hour}:${minute.toString().padStart(2, '0')} ${selectedAmPm}`;
+                // Format time in 24-hour format
+                const time24Str = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                
+                // Also show in 12-hour format for clarity
+                let hour12 = hour > 12 ? hour - 12 : hour;
+                if (hour12 === 0) hour12 = 12;
+                const ampm = hour >= 12 ? 'PM' : 'AM';
+                const time12Str = `${hour12}:${minute.toString().padStart(2, '0')} ${ampm}`;
                 
                 // Update display
-                document.getElementById('selectedDateTime').textContent = `${dateStr} at ${timeStr}`;
+                document.getElementById('selectedDateTime').textContent = `${dateStr} at ${time12Str} (${time24Str})`;
                 document.getElementById('selectedInfo').classList.add('show');
                 
-                // Store for Telegram (in 24-hour format)
+                // Store for Telegram
                 window.selectedDate = selectedDate.toISOString().split('T')[0];
-                window.selectedTime = `${hour24.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-                window.displayTime = timeStr;
+                window.selectedTime = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                window.displayTime12 = time12Str;
+                window.displayTime24 = time24Str;
             }
         }
         
         function sendToTelegram() {
             if (!window.selectedDate) {
                 alert('Please select a date first');
+                return;
+            }
+            
+            // Validate hour and minute one more time
+            let hour = parseInt(document.getElementById('customHour').value);
+            let minute = parseInt(document.getElementById('customMinute').value);
+            
+            if (hour < 1 || hour > 23) {
+                alert('Hour must be between 1 and 23');
+                return;
+            }
+            
+            if (minute < 0 || minute > 59) {
+                alert('Minute must be between 0 and 59');
                 return;
             }
             
@@ -412,7 +393,8 @@
                 action: 'date_selected',
                 date: window.selectedDate,
                 time: window.selectedTime,
-                display_time: window.displayTime,
+                display_time_12h: window.displayTime12,
+                display_time_24h: window.displayTime24,
                 timestamp: new Date().toISOString(),
                 formatted: document.getElementById('selectedDateTime').textContent
             };
