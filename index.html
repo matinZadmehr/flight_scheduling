@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Date Picker | Carry to Me</title>
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Flatpickr Calendar CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 500px;
+            overflow: hidden;
+            padding: 30px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: white;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .calendar-container {
+            margin: 20px 0;
+        }
+        
+        .flatpickr-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            text-align: center;
+            background: #f8f9fa;
+            cursor: pointer;
+        }
+        
+        .time-container {
+            margin: 30px 0;
+        }
+        
+        h2 {
+            color: #444;
+            margin-bottom: 15px;
+            font-size: 18px;
+            text-align: center;
+        }
+        
+        .time-slots {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .time-slot {
+            padding: 10px 5px;
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            min-height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .time-slot:hover {
+            background: #e3f2fd;
+            border-color: #2196f3;
+        }
+        
+        .time-slot.selected {
+            background: #2196f3;
+            color: white;
+            border-color: #1976d2;
+        }
+        
+        .custom-time-container {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .custom-time-title {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        
+        .custom-time-title span {
+            margin-left: 8px;
+            font-weight: 600;
+            color: #444;
+        }
+        
+        .time-input-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .time-input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 100px;
+        }
+        
+        .time-input-group label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .time-input {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            text-align: center;
+            width: 100%;
+            background: white;
+        }
+        
+        .am-pm-selector {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 100px;
+        }
+        
+        .am-pm-selector label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .am-pm-buttons {
+            display: flex;
+            gap: 5px;
+            width: 100%;
+        }
+        
+        .am-pm-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            font-size: 14px;
+        }
+        
+        .am-pm-btn:hover {
+            background: #f0f0f0;
+        }
+        
+        .am-pm-btn.selected {
+            background: #2196f3;
+            color: white;
+            border-color: #1976d2;
+        }
+        
+        .colon {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            align-self: center;
+            margin-top: 15px;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .confirm-btn {
+            background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+            color: white;
+        }
+        
+        .confirm-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(76, 175, 80, 0.3);
+        }
+        
+        .cancel-btn {
+            background: #f5f5f5;
+            color: #666;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .cancel-btn:hover {
+            background: #e0e0e0;
+        }
+        
+        .selected-info {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+            display: none;
+        }
+        
+        .selected-info.show {
+            display: block;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2196f3;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+                border-radius: 15px;
+            }
+            
+            .time-slots {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .time-input-wrapper {
+                flex-wrap: wrap;
+            }
+            
+            .time-input-group {
+                min-width: 80px;
+            }
+            
+            .am-pm-selector {
+                min-width: 80px;
+            }
+            
+            .buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">✈️</div>
+            <h1>Select Flight Date & Time</h1>
+            <p class="subtitle">Choose when you'd like to receive your package</p>
+        </div>
+        
+        <div class="calendar-container">
+            <input type="text" id="datepicker" class="flatpickr-input" placeholder="📅 Click to select date" readonly>
+        </div>
+        
+        <div class="time-container">
+            <h2>Choose Time</h2>
+            <div class="time-slots">
+                <!-- Time slots will be generated by JavaScript -->
+            </div>
+            
+            <div class="custom-time-container">
+                <div class="custom-time-title">
+                    <span>Or Set Custom Time</span>
+                </div>
+                
+                <div class="time-input-wrapper">
+                    <div class="time-input-group">
+                        <label>Hour</label>
+                        <input type="number" id="customHour" class="time-input" min="1" max="12" value="12" step="1">
+                    </div>
+                    
+                    <div class="colon">:</div>
+                    
+                    <div class="time-input-group">
+                        <label>Minute</label>
+                        <input type="number" id="customMinute" class="time-input" min="0" max="59" value="0" step="15">
+                    </div>
+                    
+                    <div class="am-pm-selector">
+                        <label>AM/PM</label>
+                        <div class="am-pm-buttons">
+                            <div class="am-pm-btn selected" data-value="AM">AM</div>
+                            <div class="am-pm-btn" data-value="PM">PM</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="selected-info" id="selectedInfo">
+            <strong>Selected:</strong> <span id="selectedDateTime">No date selected</span>
+        </div>
+        
+        <div class="buttons">
+            <button class="cancel-btn" onclick="cancelSelection()">Cancel</button>
+            <button class="confirm-btn" onclick="sendToTelegram()">Confirm Selection ✅</button>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Sending to Telegram...</p>
+        </div>
+    </div>
+    
+    <!-- Flatpickr Calendar JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    
+    <script>
+        // Initialize Telegram Web App
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Expand the Web App to full screen
+        tg.MainButton.hide(); // Hide default button
+        
+        // Initialize calendar
+        const fp = flatpickr("#datepicker", {
+            minDate: "today",
+            maxDate: new Date().fp_incr(365), // 1 year from today
+            dateFormat: "Y-m-d",
+            onChange: function(selectedDates, dateStr) {
+                updateSelectedDateTime();
+            }
+        });
+        
+        // Generate time slots (every 2 hours from 6 AM to 10 PM in 12-hour format)
+        const timeSlots = [];
+        for (let hour = 6; hour <= 22; hour += 2) {
+            const displayHour = hour > 12 ? hour - 12 : hour;
+            const period = hour >= 12 ? 'PM' : 'AM';
+            const time = `${displayHour}:00 ${period}`;
+            const militaryTime = `${hour.toString().padStart(2, '0')}:00`;
+            timeSlots.push({ display: time, value: militaryTime, hour: displayHour, period: period });
+        }
+        
+        // Create time slot buttons
+        const timeSlotsContainer = document.querySelector('.time-slots');
+        timeSlots.forEach(slot => {
+            const button = document.createElement('div');
+            button.className = 'time-slot';
+            button.textContent = slot.display;
+            button.dataset.hour = slot.hour;
+            button.dataset.period = slot.period;
+            button.dataset.value = slot.value;
+            button.onclick = function() {
+                // Remove selected class from all buttons
+                document.querySelectorAll('.time-slot').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+                // Add selected class to clicked button
+                this.classList.add('selected');
+                // Update custom time inputs
+                document.getElementById('customHour').value = this.dataset.hour;
+                document.getElementById('customMinute').value = '00';
+                
+                // Update AM/PM buttons
+                document.querySelectorAll('.am-pm-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                    if (btn.dataset.value === this.dataset.period) {
+                        btn.classList.add('selected');
+                    }
+                });
+                
+                updateSelectedDateTime();
+            };
+            timeSlotsContainer.appendChild(button);
+        });
+        
+        // Set default selection (first time slot)
+        document.querySelector('.time-slot').click();
+        
+        // AM/PM button handlers
+        document.querySelectorAll('.am-pm-btn').forEach(btn => {
+            btn.onclick = function() {
+                document.querySelectorAll('.am-pm-btn').forEach(b => {
+                    b.classList.remove('selected');
+                });
+                this.classList.add('selected');
+                updateSelectedDateTime();
+            };
+        });
+        
+        // Update when custom time inputs change
+        document.getElementById('customHour').addEventListener('input', function() {
+            let hour = parseInt(this.value) || 12;
+            if (hour < 1) hour = 1;
+            if (hour > 12) hour = 12;
+            this.value = hour;
+            updateSelectedDateTime();
+        });
+        
+        document.getElementById('customMinute').addEventListener('input', function() {
+            let minute = parseInt(this.value) || 0;
+            if (minute < 0) minute = 0;
+            if (minute > 59) minute = 59;
+            // Round to nearest 15
+            minute = Math.round(minute / 15) * 15;
+            if (minute === 60) minute = 0;
+            this.value = minute.toString().padStart(2, '0');
+            updateSelectedDateTime();
+        });
+        
+        function updateSelectedDateTime() {
+            const selectedDate = fp.selectedDates[0];
+            const customHour = parseInt(document.getElementById('customHour').value) || 12;
+            const customMinute = parseInt(document.getElementById('customMinute').value) || 0;
+            const selectedAmPm = document.querySelector('.am-pm-btn.selected').dataset.value;
+            
+            if (selectedDate) {
+                // Convert 12-hour to 24-hour format
+                let hour24 = customHour;
+                if (selectedAmPm === 'PM' && hour24 < 12) hour24 += 12;
+                if (selectedAmPm === 'AM' && hour24 === 12) hour24 = 0;
+                
+                // Format date nicely
+                const dateStr = selectedDate.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                
+                // Format time nicely (12-hour with AM/PM)
+                const timeStr = `${customHour}:${customMinute.toString().padStart(2, '0')} ${selectedAmPm}`;
+                
+                // Update display
+                document.getElementById('selectedDateTime').textContent = `${dateStr} at ${timeStr}`;
+                document.getElementById('selectedInfo').classList.add('show');
+                
+                // Store for Telegram (in 24-hour format)
+                window.selectedDate = selectedDate.toISOString().split('T')[0];
+                window.selectedTime = `${hour24.toString().padStart(2, '0')}:${customMinute.toString().padStart(2, '0')}`;
+                window.displayTime = timeStr;
+            }
+        }
+        
+        function sendToTelegram() {
+            if (!window.selectedDate) {
+                alert('Please select a date first');
+                return;
+            }
+            
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.querySelector('.buttons').style.display = 'none';
+            
+            // Prepare data to send
+            const data = {
+                action: 'date_selected',
+                date: window.selectedDate,
+                time: window.selectedTime,
+                display_time: window.displayTime,
+                timestamp: new Date().toISOString(),
+                formatted: document.getElementById('selectedDateTime').textContent
+            };
+            
+            // Send data back to Telegram bot
+            tg.sendData(JSON.stringify(data));
+            
+            // Close Web App after 1.5 seconds (show success message)
+            setTimeout(() => {
+                tg.close();
+            }, 1500);
+        }
+        
+        function cancelSelection() {
+            tg.close();
+        }
+        
+        // Handle Telegram events
+        tg.ready();
+        
+        // Initial update
+        updateSelectedDateTime();
+    </script>
+</body>
+</html>
