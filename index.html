@@ -66,7 +66,7 @@
         }
         
         .calendar-container {
-            margin: 20px 0;
+            margin: 20px 0 30px;
         }
         
         .flatpickr-input {
@@ -75,7 +75,7 @@
             border: 2px solid #e0e0e0;
             border-radius: 10px;
             font-size: 16px;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
             text-align: center;
             background: #f8f9fa;
             cursor: pointer;
@@ -92,118 +92,71 @@
             text-align: center;
         }
         
-        .time-slots {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        
-        .time-slot {
-            padding: 10px 5px;
-            background: #f8f9fa;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 14px;
-            min-height: 45px;
+        .time-input-row {
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-        
-        .time-slot:hover {
-            background: #e3f2fd;
-            border-color: #2196f3;
-        }
-        
-        .time-slot.selected {
-            background: #2196f3;
-            color: white;
-            border-color: #1976d2;
-        }
-        
-        .custom-time-container {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 15px;
-            margin-top: 20px;
-        }
-        
-        .custom-time-title {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 15px;
-        }
-        
-        .custom-time-title span {
-            margin-left: 8px;
-            font-weight: 600;
-            color: #444;
-        }
-        
-        .time-input-wrapper {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
+            gap: 15px;
+            margin-bottom: 30px;
         }
         
         .time-input-group {
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-width: 100px;
+            flex: 1;
         }
         
         .time-input-group label {
-            font-size: 12px;
+            font-size: 14px;
             color: #666;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            font-weight: 500;
         }
         
         .time-input {
-            padding: 12px;
+            padding: 15px;
             border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 16px;
+            border-radius: 10px;
+            font-size: 18px;
             text-align: center;
             width: 100%;
             background: white;
+            font-weight: bold;
+        }
+        
+        .separator {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-top: 25px;
         }
         
         .am-pm-selector {
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-width: 100px;
-        }
-        
-        .am-pm-selector label {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 5px;
+            flex: 1;
         }
         
         .am-pm-buttons {
             display: flex;
-            gap: 5px;
+            gap: 10px;
             width: 100%;
+            margin-top: 8px;
         }
         
         .am-pm-btn {
             flex: 1;
-            padding: 10px;
+            padding: 12px;
             border: 2px solid #e0e0e0;
             border-radius: 8px;
             background: white;
             cursor: pointer;
             transition: all 0.3s;
             text-align: center;
-            font-size: 14px;
+            font-size: 16px;
+            font-weight: 500;
         }
         
         .am-pm-btn:hover {
@@ -214,14 +167,6 @@
             background: #2196f3;
             color: white;
             border-color: #1976d2;
-        }
-        
-        .colon {
-            font-size: 24px;
-            font-weight: bold;
-            color: #333;
-            align-self: center;
-            margin-top: 15px;
         }
         
         .buttons {
@@ -301,12 +246,9 @@
                 border-radius: 15px;
             }
             
-            .time-slots {
-                grid-template-columns: repeat(3, 1fr);
-            }
-            
-            .time-input-wrapper {
+            .time-input-row {
                 flex-wrap: wrap;
+                gap: 10px;
             }
             
             .time-input-group {
@@ -314,7 +256,7 @@
             }
             
             .am-pm-selector {
-                min-width: 80px;
+                width: 100%;
             }
             
             .buttons {
@@ -336,35 +278,25 @@
         </div>
         
         <div class="time-container">
-            <h2>Choose Time</h2>
-            <div class="time-slots">
-                <!-- Time slots will be generated by JavaScript -->
-            </div>
-            
-            <div class="custom-time-container">
-                <div class="custom-time-title">
-                    <span>Or Set Custom Time</span>
+            <h2>Enter Time</h2>
+            <div class="time-input-row">
+                <div class="time-input-group">
+                    <label>Hour</label>
+                    <input type="number" id="customHour" class="time-input" min="1" max="12" value="12">
                 </div>
                 
-                <div class="time-input-wrapper">
-                    <div class="time-input-group">
-                        <label>Hour</label>
-                        <input type="number" id="customHour" class="time-input" min="1" max="12" value="12" step="1">
-                    </div>
-                    
-                    <div class="colon">:</div>
-                    
-                    <div class="time-input-group">
-                        <label>Minute</label>
-                        <input type="number" id="customMinute" class="time-input" min="0" max="59" value="0" step="15">
-                    </div>
-                    
-                    <div class="am-pm-selector">
-                        <label>AM/PM</label>
-                        <div class="am-pm-buttons">
-                            <div class="am-pm-btn selected" data-value="AM">AM</div>
-                            <div class="am-pm-btn" data-value="PM">PM</div>
-                        </div>
+                <div class="separator">:</div>
+                
+                <div class="time-input-group">
+                    <label>Minute</label>
+                    <input type="number" id="customMinute" class="time-input" min="0" max="59" value="0">
+                </div>
+                
+                <div class="am-pm-selector">
+                    <label>AM/PM</label>
+                    <div class="am-pm-buttons">
+                        <div class="am-pm-btn selected" data-value="AM">AM</div>
+                        <div class="am-pm-btn" data-value="PM">PM</div>
                     </div>
                 </div>
             </div>
@@ -404,52 +336,6 @@
             }
         });
         
-        // Generate time slots (every 2 hours from 6 AM to 10 PM in 12-hour format)
-        const timeSlots = [];
-        for (let hour = 6; hour <= 22; hour += 2) {
-            const displayHour = hour > 12 ? hour - 12 : hour;
-            const period = hour >= 12 ? 'PM' : 'AM';
-            const time = `${displayHour}:00 ${period}`;
-            const militaryTime = `${hour.toString().padStart(2, '0')}:00`;
-            timeSlots.push({ display: time, value: militaryTime, hour: displayHour, period: period });
-        }
-        
-        // Create time slot buttons
-        const timeSlotsContainer = document.querySelector('.time-slots');
-        timeSlots.forEach(slot => {
-            const button = document.createElement('div');
-            button.className = 'time-slot';
-            button.textContent = slot.display;
-            button.dataset.hour = slot.hour;
-            button.dataset.period = slot.period;
-            button.dataset.value = slot.value;
-            button.onclick = function() {
-                // Remove selected class from all buttons
-                document.querySelectorAll('.time-slot').forEach(btn => {
-                    btn.classList.remove('selected');
-                });
-                // Add selected class to clicked button
-                this.classList.add('selected');
-                // Update custom time inputs
-                document.getElementById('customHour').value = this.dataset.hour;
-                document.getElementById('customMinute').value = '00';
-                
-                // Update AM/PM buttons
-                document.querySelectorAll('.am-pm-btn').forEach(btn => {
-                    btn.classList.remove('selected');
-                    if (btn.dataset.value === this.dataset.period) {
-                        btn.classList.add('selected');
-                    }
-                });
-                
-                updateSelectedDateTime();
-            };
-            timeSlotsContainer.appendChild(button);
-        });
-        
-        // Set default selection (first time slot)
-        document.querySelector('.time-slot').click();
-        
         // AM/PM button handlers
         document.querySelectorAll('.am-pm-btn').forEach(btn => {
             btn.onclick = function() {
@@ -461,35 +347,31 @@
             };
         });
         
-        // Update when custom time inputs change
-        document.getElementById('customHour').addEventListener('input', function() {
-            let hour = parseInt(this.value) || 12;
-            if (hour < 1) hour = 1;
-            if (hour > 12) hour = 12;
-            this.value = hour;
-            updateSelectedDateTime();
-        });
-        
-        document.getElementById('customMinute').addEventListener('input', function() {
-            let minute = parseInt(this.value) || 0;
-            if (minute < 0) minute = 0;
-            if (minute > 59) minute = 59;
-            // Round to nearest 15
-            minute = Math.round(minute / 15) * 15;
-            if (minute === 60) minute = 0;
-            this.value = minute.toString().padStart(2, '0');
-            updateSelectedDateTime();
-        });
+        // Update when inputs change
+        document.getElementById('customHour').addEventListener('input', updateSelectedDateTime);
+        document.getElementById('customMinute').addEventListener('input', updateSelectedDateTime);
         
         function updateSelectedDateTime() {
             const selectedDate = fp.selectedDates[0];
-            const customHour = parseInt(document.getElementById('customHour').value) || 12;
-            const customMinute = parseInt(document.getElementById('customMinute').value) || 0;
+            const customHour = document.getElementById('customHour').value;
+            const customMinute = document.getElementById('customMinute').value;
             const selectedAmPm = document.querySelector('.am-pm-btn.selected').dataset.value;
             
             if (selectedDate) {
+                // Validate and format hour
+                let hour = parseInt(customHour) || 12;
+                if (hour < 1) hour = 1;
+                if (hour > 12) hour = 12;
+                document.getElementById('customHour').value = hour;
+                
+                // Validate and format minute
+                let minute = parseInt(customMinute) || 0;
+                if (minute < 0) minute = 0;
+                if (minute > 59) minute = 59;
+                document.getElementById('customMinute').value = minute;
+                
                 // Convert 12-hour to 24-hour format
-                let hour24 = customHour;
+                let hour24 = hour;
                 if (selectedAmPm === 'PM' && hour24 < 12) hour24 += 12;
                 if (selectedAmPm === 'AM' && hour24 === 12) hour24 = 0;
                 
@@ -502,7 +384,7 @@
                 });
                 
                 // Format time nicely (12-hour with AM/PM)
-                const timeStr = `${customHour}:${customMinute.toString().padStart(2, '0')} ${selectedAmPm}`;
+                const timeStr = `${hour}:${minute.toString().padStart(2, '0')} ${selectedAmPm}`;
                 
                 // Update display
                 document.getElementById('selectedDateTime').textContent = `${dateStr} at ${timeStr}`;
@@ -510,7 +392,7 @@
                 
                 // Store for Telegram (in 24-hour format)
                 window.selectedDate = selectedDate.toISOString().split('T')[0];
-                window.selectedTime = `${hour24.toString().padStart(2, '0')}:${customMinute.toString().padStart(2, '0')}`;
+                window.selectedTime = `${hour24.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
                 window.displayTime = timeStr;
             }
         }
