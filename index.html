@@ -8,6 +8,8 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <!-- Flatpickr Calendar CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -166,6 +168,13 @@
             box-shadow: 0 5px 20px rgba(76, 175, 80, 0.3);
         }
         
+        .confirm-btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
         .cancel-btn {
             background: #f5f5f5;
             color: #666;
@@ -205,6 +214,40 @@
             margin: 0 auto 15px;
         }
         
+        .error-message {
+            display: none;
+            text-align: center;
+            padding: 15px;
+            background: #ffebee;
+            border-radius: 10px;
+            margin: 20px 0;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+        
+        .success-message {
+            display: none;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .success-icon {
+            font-size: 80px;
+            color: #2ecc71;
+            margin-bottom: 20px;
+        }
+        
+        .test-notice {
+            text-align: center;
+            padding: 10px;
+            background: #fff3e0;
+            border-radius: 10px;
+            margin: 20px 0;
+            color: #ef6c00;
+            font-size: 14px;
+            border: 1px solid #ffcc80;
+        }
+        
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -239,6 +282,17 @@
             <p class="subtitle">Choose when you'd like to receive your package</p>
         </div>
         
+        <!-- Test Mode Notice -->
+        <div class="test-notice" id="testNotice" style="display: none;">
+            <strong>⚠️ Test Mode:</strong> Running outside Telegram. Data will be logged to console.
+        </div>
+        
+        <!-- Error Message -->
+        <div class="error-message" id="errorMessage">
+            <i class="fas fa-exclamation-triangle"></i>
+            <p id="errorText">Error sending data. Please try again.</p>
+        </div>
+        
         <div class="calendar-container">
             <input type="text" id="datepicker" class="flatpickr-input" placeholder="📅 Click to select date" readonly>
         </div>
@@ -267,12 +321,20 @@
         
         <div class="buttons">
             <button class="cancel-btn" onclick="cancelSelection()">Cancel</button>
-            <button class="confirm-btn" onclick="sendToTelegram()">Confirm Selection ✅</button>
+            <button class="confirm-btn" onclick="sendToTelegram()" id="confirmBtn">Confirm Selection ✅</button>
         </div>
         
         <div class="loading" id="loading">
             <div class="spinner"></div>
             <p>Sending to Telegram...</p>
+        </div>
+        
+        <!-- Success Message -->
+        <div class="success-message" id="successMessage">
+            <div class="success-icon">✅</div>
+            <h2>Date & Time Successfully Set!</h2>
+            <p>Your flight schedule has been saved and is being processed.</p>
+            <p style="margin-top: 20px; color: #7f8c8d; font-size: 14px;">This window will close automatically...</p>
         </div>
     </div>
     
@@ -280,42 +342,106 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     
     <script>
+        // Global variables
+        let tg = null;
+        let fp = null;
+        let isTelegramWebApp = false;
+        
+        // CONFIGURATION - SET YOUR WEBHOOK URLS HERE
+        const WEBHOOK_URL = 'https://aistudio.didbi.com/webhook/form/flight_scheduling'; // ← Change this!
+        const N8N_WEBHOOK_URL = 'https://aistudio.didbi.com/webhook/form/flight_scheduling'; // ← Optional direct n8n
+        
+        // Store selected data
+        window.selectedDate = null;
+        window.selectedTime = null;
+        window.displayTime12 = null;
+        window.displayTime24 = null;
+        
         // Initialize Telegram Web App
-        const tg = window.Telegram.WebApp;
-        tg.expand(); // Expand the Web App to full screen
-        tg.MainButton.hide(); // Hide default button
+        function initTelegramWebApp() {
+            console.log('Initializing Telegram Web App...');
+            
+            if (window.Telegram && window.Telegram.WebApp) {
+                try {
+                    tg = window.Telegram.WebApp;
+                    isTelegramWebApp = true;
+                    
+                    console.log('Telegram Web App detected');
+                    console.log('Platform:', tg.platform);
+                    console.log('Version:', tg.version);
+                    
+                    // Initialize Telegram Web App
+                    tg.ready();
+                    tg.expand();
+                    tg.MainButton.hide();
+                    
+                    // Set theme params if needed
+                    if (tg.colorScheme === 'dark') {
+                        document.body.style.background = '#1a1a1a';
+                        document.querySelector('.container').style.background = '#2d2d2d';
+                        document.querySelector('.container').style.color = '#ffffff';
+                    }
+                    
+                    return true;
+                    
+                } catch (error) {
+                    console.error('Error initializing Telegram Web App:', error);
+                    showError('Failed to initialize Telegram Web App');
+                    return false;
+                }
+            } else {
+                console.warn('Telegram Web App SDK not found. Running in test mode.');
+                document.getElementById('testNotice').style.display = 'block';
+                return false;
+            }
+        }
+        
+        // Show error message
+        function showError(message) {
+            document.getElementById('errorText').textContent = message;
+            document.getElementById('errorMessage').style.display = 'block';
+            
+            setTimeout(() => {
+                document.getElementById('errorMessage').style.display = 'none';
+            }, 5000);
+        }
         
         // Initialize calendar
-        const fp = flatpickr("#datepicker", {
-            minDate: "today",
-            maxDate: new Date().fp_incr(365), // 1 year from today
-            dateFormat: "Y-m-d",
-            onChange: function(selectedDates, dateStr) {
+        function initCalendar() {
+            fp = flatpickr("#datepicker", {
+                minDate: "today",
+                maxDate: new Date().fp_incr(365), // 1 year from today
+                dateFormat: "Y-m-d",
+                onChange: function(selectedDates, dateStr) {
+                    updateSelectedDateTime();
+                }
+            });
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // Add constraints to hour input (1-23)
+            document.getElementById('customHour').addEventListener('input', function() {
+                let hour = parseInt(this.value) || 12;
+                if (hour < 1) hour = 1;
+                if (hour > 23) hour = 23;
+                this.value = hour;
                 updateSelectedDateTime();
-            }
-        });
-        
-        // Add constraints to hour input (1-23)
-        document.getElementById('customHour').addEventListener('input', function() {
-            let hour = parseInt(this.value) || 12;
-            if (hour < 1) hour = 1;
-            if (hour > 23) hour = 23;
-            this.value = hour;
-            updateSelectedDateTime();
-        });
-        
-        // Add constraints to minute input (0-59)
-        document.getElementById('customMinute').addEventListener('input', function() {
-            let minute = parseInt(this.value) || 0;
-            if (minute < 0) minute = 0;
-            if (minute > 59) minute = 59;
-            this.value = minute;
-            updateSelectedDateTime();
-        });
-        
-        // Also update on change (for keyboard arrows)
-        document.getElementById('customHour').addEventListener('change', updateSelectedDateTime);
-        document.getElementById('customMinute').addEventListener('change', updateSelectedDateTime);
+            });
+            
+            // Add constraints to minute input (0-59)
+            document.getElementById('customMinute').addEventListener('input', function() {
+                let minute = parseInt(this.value) || 0;
+                if (minute < 0) minute = 0;
+                if (minute > 59) minute = 59;
+                this.value = minute;
+                updateSelectedDateTime();
+            });
+            
+            // Also update on change (for keyboard arrows)
+            document.getElementById('customHour').addEventListener('change', updateSelectedDateTime);
+            document.getElementById('customMinute').addEventListener('change', updateSelectedDateTime);
+        }
         
         function updateSelectedDateTime() {
             const selectedDate = fp.selectedDates[0];
@@ -356,67 +482,259 @@
                 document.getElementById('selectedDateTime').textContent = `${dateStr} at ${time12Str} (${time24Str})`;
                 document.getElementById('selectedInfo').classList.add('show');
                 
-                // Store for Telegram
+                // Enable confirm button
+                document.getElementById('confirmBtn').disabled = false;
+                
+                // Store for sending
                 window.selectedDate = selectedDate.toISOString().split('T')[0];
                 window.selectedTime = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
                 window.displayTime12 = time12Str;
                 window.displayTime24 = time24Str;
+            } else {
+                document.getElementById('confirmBtn').disabled = true;
             }
         }
         
-        function sendToTelegram() {
+        // Validate date and time
+        function validateDateTime() {
             if (!window.selectedDate) {
-                alert('Please select a date first');
-                return;
+                showError('Please select a date first');
+                return false;
             }
             
-            // Validate hour and minute one more time
+            // Validate hour and minute
             let hour = parseInt(document.getElementById('customHour').value);
             let minute = parseInt(document.getElementById('customMinute').value);
             
             if (hour < 1 || hour > 23) {
-                alert('Hour must be between 1 and 23');
-                return;
+                showError('Hour must be between 1 and 23');
+                return false;
             }
             
             if (minute < 0 || minute > 59) {
-                alert('Minute must be between 0 and 59');
-                return;
+                showError('Minute must be between 0 and 59');
+                return false;
             }
+            
+            // Check if selected date is in the future
+            const selectedDate = fp.selectedDates[0];
+            const now = new Date();
+            if (selectedDate < now) {
+                showError('Please select a future date and time');
+                return false;
+            }
+            
+            return true;
+        }
+        
+        // Send data to webhook
+        async function sendToWebhook(data) {
+            try {
+                console.log('Sending date data to webhook:', data);
+                
+                const response = await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                console.log('Webhook response:', result);
+                
+                return result.success;
+                
+            } catch (error) {
+                console.error('Error sending to webhook:', error);
+                return false;
+            }
+        }
+        
+        // Send directly to n8n (optional)
+        async function sendDirectlyToN8N(data) {
+            try {
+                const response = await fetch(N8N_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                return response.ok;
+                
+            } catch (error) {
+                console.error('Error sending to n8n:', error);
+                return false;
+            }
+        }
+        
+        // Get user IP address
+        async function getUserIP() {
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                return data.ip;
+            } catch (error) {
+                return 'unknown';
+            }
+        }
+        
+        // Main send function
+        async function sendToTelegram() {
+            if (!validateDateTime()) return;
             
             // Show loading
             document.getElementById('loading').style.display = 'block';
             document.querySelector('.buttons').style.display = 'none';
             
+            // Get Telegram user info if available
+            let telegramUser = {};
+            if (isTelegramWebApp && tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                telegramUser = {
+                    telegram_id: tg.initDataUnsafe.user.id,
+                    telegram_username: tg.initDataUnsafe.user.username,
+                    telegram_first_name: tg.initDataUnsafe.user.first_name,
+                    telegram_last_name: tg.initDataUnsafe.user.last_name,
+                    telegram_language_code: tg.initDataUnsafe.user.language_code
+                };
+            }
+            
+            // Get selected date object
+            const selectedDateObj = fp.selectedDates[0];
+            
             // Prepare data to send
             const data = {
-                action: 'date_selected',
-                date: window.selectedDate,
-                time: window.selectedTime,
-                display_time_12h: window.displayTime12,
-                display_time_24h: window.displayTime24,
+                action: 'flight_date_selected',
                 timestamp: new Date().toISOString(),
-                formatted: document.getElementById('selectedDateTime').textContent
+                date_time: {
+                    date: window.selectedDate, // YYYY-MM-DD
+                    time_24h: window.selectedTime, // HH:MM
+                    time_12h: window.displayTime12,
+                    time_24h_display: window.displayTime24,
+                    formatted: document.getElementById('selectedDateTime').textContent,
+                    unix_timestamp: Math.floor(selectedDateObj.getTime() / 1000),
+                    iso_string: selectedDateObj.toISOString()
+                },
+                user_selection: {
+                    hour: parseInt(document.getElementById('customHour').value),
+                    minute: parseInt(document.getElementById('customMinute').value),
+                    date_picker_value: document.getElementById('datepicker').value
+                },
+                telegram_user: telegramUser,
+                source: 'telegram_flight_date_picker',
+                ip_address: await getUserIP(),
+                metadata: {
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    user_agent: navigator.userAgent,
+                    screen_resolution: `${window.screen.width}x${window.screen.height}`,
+                    language: navigator.language
+                }
             };
             
-            // Send data back to Telegram bot
-            tg.sendData(JSON.stringify(data));
+            console.log('Flight date data:', data);
             
-            // Close Web App after 1.5 seconds (show success message)
+            // Send data using multiple methods (with fallbacks)
+            let success = false;
+            
+            // Method 1: Send to webhook.php
+            if (WEBHOOK_URL && !WEBHOOK_URL.includes('your-domain.com')) {
+                success = await sendToWebhook(data);
+            }
+            
+            // Method 2: Try direct n8n webhook if webhook.php fails or not configured
+            if (!success && N8N_WEBHOOK_URL && !N8N_WEBHOOK_URL.includes('your-n8n.com')) {
+                success = await sendDirectlyToN8N(data);
+            }
+            
+            // Method 3: Try Telegram sendData as fallback
+            if (!success && isTelegramWebApp && tg && tg.sendData) {
+                try {
+                    tg.sendData(JSON.stringify(data));
+                    success = true;
+                    console.log('Data sent via Telegram sendData');
+                } catch (error) {
+                    console.error('Telegram sendData error:', error);
+                }
+            }
+            
+            // If all methods failed and we're not in Telegram, consider it success for testing
+            if (!success && !isTelegramWebApp) {
+                console.log('Test mode: Data logged to console');
+                success = true; // For testing purposes
+            }
+            
+            // Show success message
             setTimeout(() => {
-                tg.close();
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('successMessage').style.display = 'block';
+                
+                // Close after 3 seconds if in Telegram
+                setTimeout(() => {
+                    if (isTelegramWebApp && tg && tg.close) {
+                        tg.close();
+                    } else {
+                        // Show manual close message for browser
+                        document.getElementById('successMessage').innerHTML += 
+                            '<p style="margin-top: 20px; color: #7f8c8d; font-size: 14px;">You can close this window now.</p>';
+                    }
+                }, 3000);
+                
             }, 1500);
         }
         
         function cancelSelection() {
-            tg.close();
+            if (isTelegramWebApp && tg && tg.close) {
+                tg.close();
+            } else {
+                if (confirm('Are you sure you want to cancel?')) {
+                    window.location.reload();
+                }
+            }
         }
         
-        // Handle Telegram events
-        tg.ready();
-        
-        // Initial update
-        updateSelectedDateTime();
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Telegram Web App
+            const telegramInitialized = initTelegramWebApp();
+            
+            // Initialize calendar
+            initCalendar();
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Initial update
+            updateSelectedDateTime();
+            
+            // Add test button if not in Telegram
+            if (!telegramInitialized) {
+                const testButton = document.createElement('button');
+                testButton.innerHTML = '🧪 Test Send (No Telegram)';
+                testButton.style.cssText = `
+                    background: #ff9800;
+                    color: white;
+                    border: none;
+                    padding: 12px;
+                    border-radius: 10px;
+                    margin-top: 15px;
+                    width: 100%;
+                    font-weight: bold;
+                    cursor: pointer;
+                `;
+                testButton.onclick = function() {
+                    console.log('Test mode activated');
+                    sendToTelegram();
+                };
+                document.querySelector('.buttons').appendChild(testButton);
+            }
+            
+            // Check if webhook URL is configured
+            if (WEBHOOK_URL.includes('your-domain.com')) {
+                showError('Please configure your webhook URL in the code settings.');
+            }
+        });
     </script>
 </body>
 </html>
